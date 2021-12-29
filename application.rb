@@ -1,10 +1,23 @@
 require 'socket'
 require 'uri'
 require 'yaml/store'
+require 'pstore'
 
 server = TCPServer.new(9999)
 
-store = YAML::Store.new("store.yml")
+store = PStore.new("store.pstore")
+
+class Profile
+    attr_reader :first_name, :last_name, :gender, :favorite_color, :dob
+    def initialize(first_name, last_name, gender, favorite_color, dob)
+      @first_name = first_name
+      @last_name = last_name
+      @gender = gender
+      @favorite_color = favorite_color
+      @dob = dob
+
+    end
+end
 
 
 def input_form
@@ -16,22 +29,98 @@ def input_form
     STR
 end
 
-def decode_data(body)
+def handle_comma_deltimited_data(file_name, store)
+    File.foreach("#{Dir.pwd}/input_data/#{file_name}"){|line| 
+        new_data = {}
+        line = line.split(",")
+        # puts "MAP: #{line.split(",").map(&:strip)}"
+        new_data[:first_name] = line[0]
+        new_data[:last_name] = line[1]
+        new_data[:gender] = line[2]
+        new_data[:favorite_color] = line[3]
+        new_data[:dob] = line[4]
+        
+        profile = Profile.new(new_data[:first_name], new_data[:last_name], new_data[:gender], new_data[:favorite_color], new_data[:dob])
+        puts "Profile: #{profile.first_name}"
+        store.transaction do 
+            puts "ROOTS: #{store.roots()}"
+            if store[:profile_data] == nil || !(store[:profile_data].any?{|p| p.first_name == profile.first_name})
+                store[:profile_data] ||= Array.new
+                store[:profile_data].push(profile)
+            end
+                puts "WRITE DATA: #{store[:profile_data]}"
+            
+        end
+        }
+end
+
+def handle_pipe_deltimited_data(file_name, store)
+    File.foreach("#{Dir.pwd}/input_data/#{file_name}"){|line| 
+        new_data = {}
+        line = line.split("|")
+        # puts "MAP: #{line.split(",").map(&:strip)}"
+        new_data[:first_name] = line[0]
+        new_data[:last_name] = line[1]
+        new_data[:gender] = line[2]
+        new_data[:favorite_color] = line[3]
+        new_data[:dob] = line[4]
+        
+        profile = Profile.new(new_data[:first_name], new_data[:last_name], new_data[:gender], new_data[:favorite_color], new_data[:dob])
+        puts "Profile: #{profile.first_name}"
+        store.transaction do 
+            puts "ROOTS: #{store.roots()}"
+            if store[:profile_data] == nil || !(store[:profile_data].any?{|p| p.first_name == profile.first_name})
+                store[:profile_data] ||= Array.new
+                store[:profile_data].push(profile)
+            end
+                puts "WRITE DATA: #{store[:profile_data]}"
+            
+        end
+        }
+end
+
+def handle_space_deltimited_data(file_name, store)
+    File.foreach("#{Dir.pwd}/input_data/#{file_name}"){|line| 
+        new_data = {}
+        line = line.split(" ")
+        # puts "MAP: #{line.split(",").map(&:strip)}"
+        new_data[:first_name] = line[0]
+        new_data[:last_name] = line[1]
+        new_data[:gender] = line[2]
+        new_data[:favorite_color] = line[3]
+        new_data[:dob] = line[4]
+        
+        profile = Profile.new(new_data[:first_name], new_data[:last_name], new_data[:gender], new_data[:favorite_color], new_data[:dob])
+        puts "Profile: #{profile.first_name}"
+        store.transaction do 
+            puts "ROOTS: #{store.roots()}"
+            if store[:profile_data] == nil || !(store[:profile_data].any?{|p| p.first_name == profile.first_name})
+                store[:profile_data] ||= Array.new
+                store[:profile_data].push(profile)
+            end
+                puts "WRITE DATA: #{store[:profile_data]}"
+            
+        end
+        }
+end
+
+
+def decode_data(body, store)
     
     file_name = URI.decode_www_form(body)[0][1]
     # file = File.open("#{file_name}")
     puts Dir.pwd
     file_data = File.read("#{Dir.pwd}/input_data/#{file_name}")
+    profile_data = []
     # file_data = File.read("#{file_name}")
     if file_data.include? ","
-        File.foreach("#{Dir.pwd}/input_data/#{file_name}"){|line| puts line}
-        # puts "Comma delimited: #{file_data.foreach{|line| puts line}}" 
+        handle_comma_deltimited_data(file_name, store)    
     elsif file_data.include? "|"
         puts "Pipe delimited: #{file_data.split("|")}" 
     else
         puts "space delimited: #{file_data.split(" ")}" 
     end
-
+    return profile_data
     # puts "NEW DATA: #{file_data}"
 end
 
@@ -56,12 +145,18 @@ loop do
         # Read Data from file
         all_data = {}
         store.transaction do 
-            all_data = store[:profile_data]
+            all_data[:profile_data] = store[:profile_data]
         end
-        if all_data != nil
-            all_data.each do |data|
-                response_message << "<li> #{data[:first_name]} #{data[:last_name]} #{data[:gender]} #{data[:dob]} #{data[:favorite_color]}</li>"
+        if all_data[:profile_data] != nil
+            puts "STORE DATA: #{all_data[:profile_data].length}"
+            puts "STORE DATA: #{all_data[:profile_data].class}"
+            puts "STORE DATA: #{all_data[:profile_data][0]}"
+            for profile in all_data[:profile_data]
+                response_message << "<li> #{profile.first_name} #{profile.last_name} #{profile.gender} #{profile.dob} #{profile.favorite_color} </li>"
             end
+            # all_data[:profile_data].each do |profile_data|
+            #     response_message << "<li> #{profile_data[:first_name]} #{profile_data[:last_name]} #{profile_data[:gender]} #{profile_data[:dob]} #{profile_data[:favorite_color]}</li>"
+            # end
         end
         response_message << "</ul>"
 
@@ -82,14 +177,19 @@ loop do
         body = client.read(headers['Content-Length'].to_i)
 
         # Decode it
-        new_data = decode_data(body)
+        new_data = decode_data(body, store)
+
+        
 
         # WRITE user input to file
-        if new_data != nil
-            store.transaction do 
-                store[:data] << new_data.transform_keys(&:to_sym)
-            end
-        end
+        # if new_data != nil
+        #     store.transaction do 
+        #         store[:profile_data] ||= Array.new
+        #         store[:profile_data].push(new_data[0])
+        #             # puts "WRITE DATA: #{store[:profile_data]}"ß
+                
+        #     end
+        # end
         # all_data << new_daily_data.transform_keys(&:to_sym)
 
 
