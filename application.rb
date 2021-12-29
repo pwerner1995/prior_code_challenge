@@ -1,6 +1,6 @@
 require 'socket'
 require 'uri'
-require 'yaml/store'
+# require 'yaml/store'
 require 'pstore'
 
 server = TCPServer.new(9999)
@@ -34,8 +34,8 @@ def handle_comma_deltimited_data(file_name, store)
         new_data = {}
         line = line.split(",")
         # puts "MAP: #{line.split(",").map(&:strip)}"
-        new_data[:first_name] = line[0]
-        new_data[:last_name] = line[1]
+        new_data[:last_name] = line[0]
+        new_data[:first_name] = line[1]
         new_data[:gender] = line[2]
         new_data[:favorite_color] = line[3]
         new_data[:dob] = line[4]
@@ -84,8 +84,8 @@ def handle_space_deltimited_data(file_name, store)
         new_data = {}
         line = line.split(" ")
         # puts "MAP: #{line.split(",").map(&:strip)}"
-        new_data[:first_name] = line[0]
-        new_data[:last_name] = line[1]
+        new_data[:last_name] = line[0]
+        new_data[:first_name] = line[1]
         new_data[:gender] = line[2]
         new_data[:favorite_color] = line[3]
         new_data[:dob] = line[4]
@@ -151,8 +151,23 @@ loop do
             puts "STORE DATA: #{all_data[:profile_data].length}"
             puts "STORE DATA: #{all_data[:profile_data].class}"
             puts "STORE DATA: #{all_data[:profile_data][0]}"
-            for profile in all_data[:profile_data]
-                response_message << "<li> #{profile.first_name} #{profile.last_name} #{profile.gender} #{profile.dob} #{profile.favorite_color} </li>"
+            puts "SORTED BY NAME DESC: #{all_data[:profile_data].sort{|a,b| b.first_name <=> a.first_name}}"
+            puts "SORTED BY GENDER THEN NAME: #{all_data[:profile_data].sort_by{|a| [a.gender, a.first_name] }}"
+            puts "SORTED BY DATE: #{all_data[:profile_data].sort_by{|a| a.dob.split("/").reverse }}"
+            
+            response_message << "<h3> Sorted by Gender: </h3>"
+            for profile in all_data[:profile_data].sort_by{|a| [a.gender, a.last_name] }
+                response_message << "<li> #{profile.last_name} #{profile.first_name} #{profile.gender} #{profile.dob} #{profile.favorite_color} </li>"
+            end
+            
+            response_message << "<h3> Sorted by DOB Ascending: </h3>"
+            for profile in all_data[:profile_data].sort_by{|a| a.dob.split("/").reverse }
+                response_message << "<li> #{profile.last_name} #{profile.first_name} #{profile.gender} #{profile.dob} #{profile.favorite_color} </li>"
+            end
+
+            response_message << "<h3> Sorted by Last Name Descending: </h3>"
+            for profile in all_data[:profile_data].sort{|a,b| a.last_name <=> b.last_name}.reverse
+                response_message << "<li> #{profile.last_name} #{profile.first_name} #{profile.gender} #{profile.dob} #{profile.favorite_color} </li>"
             end
             # all_data[:profile_data].each do |profile_data|
             #     response_message << "<li> #{profile_data[:first_name]} #{profile_data[:last_name]} #{profile_data[:gender]} #{profile_data[:dob]} #{profile_data[:favorite_color]}</li>"
