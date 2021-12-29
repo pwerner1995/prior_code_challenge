@@ -59,11 +59,15 @@ def handle_pipe_deltimited_data(file_name, store)
         new_data = {}
         line = line.split("|")
         # puts "MAP: #{line.split(",").map(&:strip)}"
-        new_data[:first_name] = line[0]
-        new_data[:last_name] = line[1]
-        new_data[:gender] = line[2]
-        new_data[:favorite_color] = line[3]
-        new_data[:dob] = line[4]
+        new_data[:last_name] = line[0]
+        new_data[:first_name] = line[1]
+        if line[3] == "M"
+            new_data[:gender] = "Male"
+        else
+            new_data[:gender] = "Female"
+        end
+        new_data[:favorite_color] = line[4]
+        new_data[:dob] = line[5].split("-").join("/")
         
         profile = Profile.new(new_data[:first_name], new_data[:last_name], new_data[:gender], new_data[:favorite_color], new_data[:dob])
         puts "Profile: #{profile.first_name}"
@@ -86,9 +90,13 @@ def handle_space_deltimited_data(file_name, store)
         # puts "MAP: #{line.split(",").map(&:strip)}"
         new_data[:last_name] = line[0]
         new_data[:first_name] = line[1]
-        new_data[:gender] = line[2]
-        new_data[:favorite_color] = line[3]
-        new_data[:dob] = line[4]
+        if line[3] == "M"
+            new_data[:gender] = "Male"
+        else
+            new_data[:gender] = "Female"
+        end
+        new_data[:dob] = line[4].split("-").join("/")
+        new_data[:favorite_color] = line[5]
         
         profile = Profile.new(new_data[:first_name], new_data[:last_name], new_data[:gender], new_data[:favorite_color], new_data[:dob])
         puts "Profile: #{profile.first_name}"
@@ -117,8 +125,10 @@ def decode_data(body, store)
         handle_comma_deltimited_data(file_name, store)    
     elsif file_data.include? "|"
         puts "Pipe delimited: #{file_data.split("|")}" 
+        handle_pipe_deltimited_data(file_name, store)
     else
         puts "space delimited: #{file_data.split(" ")}" 
+        handle_space_deltimited_data(file_name, store)
     end
     return profile_data
     # puts "NEW DATA: #{file_data}"
@@ -156,7 +166,7 @@ loop do
             puts "SORTED BY DATE: #{all_data[:profile_data].sort_by{|a| a.dob.split("/").reverse }}"
             
             response_message << "<h3> Sorted by Gender: </h3>"
-            for profile in all_data[:profile_data].sort_by{|a| [a.gender, a.last_name] }
+            for profile in all_data[:profile_data].sort_by{|a| [a.gender == "Female" ? 0 : 1, a.last_name]}
                 response_message << "<li> #{profile.last_name} #{profile.first_name} #{profile.gender} #{profile.dob} #{profile.favorite_color} </li>"
             end
             
