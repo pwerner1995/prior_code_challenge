@@ -32,11 +32,11 @@ def handle_comma_deltimited_data(file_name, store)
     File.foreach("#{Dir.pwd}/input_data/#{file_name}"){|line| 
         new_data = {}
         line = line.split(",")
-        new_data[:last_name] = line[0]
-        new_data[:first_name] = line[1]
-        new_data[:gender] = line[2]
-        new_data[:favorite_color] = line[3]
-        new_data[:dob] = line[4]
+        new_data[:last_name] = line[0].strip
+        new_data[:first_name] = line[1].strip
+        new_data[:gender] = line[2].strip
+        new_data[:favorite_color] = line[3].strip
+        new_data[:dob] = line[4].strip
         
         profile = Profile.new(new_data[:first_name], new_data[:last_name], new_data[:gender], new_data[:favorite_color], new_data[:dob])
         store.transaction do 
@@ -52,14 +52,14 @@ def handle_pipe_deltimited_data(file_name, store)
     File.foreach("#{Dir.pwd}/input_data/#{file_name}"){|line| 
         new_data = {}
         line = line.split("|")
-        new_data[:last_name] = line[0]
-        new_data[:first_name] = line[1]
-        if line[3] == "M"
+        new_data[:last_name] = line[0].strip
+        new_data[:first_name] = line[1].strip
+        if line[3].strip == "M"
             new_data[:gender] = "Male"
         else
             new_data[:gender] = "Female"
         end
-        new_data[:favorite_color] = line[4]
+        new_data[:favorite_color] = line[4].strip
         new_data[:dob] = line[5].split("-").join("/")
         
         profile = Profile.new(new_data[:first_name], new_data[:last_name], new_data[:gender], new_data[:favorite_color], new_data[:dob])
@@ -77,15 +77,15 @@ def handle_space_deltimited_data(file_name, store)
     File.foreach("#{Dir.pwd}/input_data/#{file_name}"){|line| 
         new_data = {}
         line = line.split(" ")
-        new_data[:last_name] = line[0]
-        new_data[:first_name] = line[1]
-        if line[3] == "M"
+        new_data[:last_name] = line[0].strip
+        new_data[:first_name] = line[1].strip
+        if line[3].strip == "M"
             new_data[:gender] = "Male"
         else
             new_data[:gender] = "Female"
         end
         new_data[:dob] = line[4].split("-").join("/")
-        new_data[:favorite_color] = line[5]
+        new_data[:favorite_color] = line[5].strip
         
         profile = Profile.new(new_data[:first_name], new_data[:last_name], new_data[:gender], new_data[:favorite_color], new_data[:dob])
         store.transaction do 
@@ -128,7 +128,7 @@ loop do
     case [method_token, target]
     when ["GET", "/show/data"]
         status_code = "200 OK"
-
+        response_message = ""
         # Display form & data hash
         response_message = "<h1> Profile Data </h1>" << input_form
         response_message << "<ul>"
@@ -138,7 +138,7 @@ loop do
             all_data[:profile_data] = store[:profile_data]
         end
         if all_data[:profile_data] != nil
-            
+
             response_message << "<h3> Sorted by Gender: </h3>"
             for profile in all_data[:profile_data].sort_by{|a| [a.gender == "Female" ? 0 : 1, a.last_name]}
                 response_message << "<li> #{profile.last_name} #{profile.first_name} #{profile.gender} #{profile.dob} #{profile.favorite_color} </li>"

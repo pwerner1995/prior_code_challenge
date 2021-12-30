@@ -2,7 +2,7 @@
 
 ### Inctructions:
   - clone repository into local directory
-  - Run "ruby application.rb" - this will start a server at port 9999
+  - Run "ruby application.rb" - this will start a server at port 9999 (Ruby Version 2.6.1)
   - open a browser and got http://localhost:9999/show/data
 
 ![image](https://user-images.githubusercontent.com/53374761/147762283-0503cd25-ea57-48fe-bab6-1a2fdd6a90fe.png)
